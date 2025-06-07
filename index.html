@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Solana Memecoin Scanner</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .fade-in {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeIn 0.8s ease-out forwards;
+    }
+    .fade-in:nth-child(1) { animation-delay: 0.1s; }
+    .fade-in:nth-child(2) { animation-delay: 0.3s; }
+    .fade-in:nth-child(3) { animation-delay: 0.5s; }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes popupFade {
+      0% {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      10%, 90% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+    }
+
+    .popup {
+      animation: popupFade 5s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white min-h-screen p-6 font-sans">
+  <header class="text-center mb-12">
+    <h1 class="text-5xl font-extrabold tracking-tight">Solana Memecoin Scanner</h1>
+    <p class="text-gray-400 mt-3 text-lg">Realtime degen token launches & whale alerts</p>
+  </header>
+
+  <!-- Popup area -->
+  <div id="popup-container" class="fixed top-4 right-4 space-y-2 z-50"></div>
+
+  <!-- Trending Leaderboard -->
+  <section class="max-w-4xl mx-auto mb-12">
+    <h2 class="text-3xl font-bold mb-4">Trending Memecoins</h2>
+    <ul class="bg-gray-900/60 border border-gray-700 rounded-2xl shadow-xl p-4 divide-y divide-gray-800">
+      <li class="flex justify-between py-2"><span>$FROGZ</span><span class="text-green-400 font-bold">+123%</span></li>
+      <li class="flex justify-between py-2"><span>$MOONBAG</span><span class="text-green-400 font-bold">+98%</span></li>
+      <li class="flex justify-between py-2"><span>$DOGECASH</span><span class="text-green-400 font-bold">+75%</span></li>
+    </ul>
+  </section>
+
+  <!-- Static token cards -->
+  <section class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div class="fade-in bg-gray-900/60 border border-gray-700 rounded-2xl shadow-xl p-6">
+      <h2 class="text-2xl font-semibold">$FROGZ</h2>
+      <p class="text-sm text-gray-400 mt-1">Volume: $1.2M</p>
+      <p class="text-sm text-gray-400">Liquidity: $300K</p>
+      <button class="mt-4 px-4 py-2 rounded-xl bg-green-500 text-black font-bold hover:bg-green-400">View Token</button>
+    </div>
+    <div class="fade-in bg-gray-900/60 border border-gray-700 rounded-2xl shadow-xl p-6">
+      <h2 class="text-2xl font-semibold">$MOONBAG</h2>
+      <p class="text-sm text-gray-400 mt-1">Volume: $850K</p>
+      <p class="text-sm text-gray-400">Liquidity: $210K</p>
+      <button class="mt-4 px-4 py-2 rounded-xl bg-green-500 text-black font-bold hover:bg-green-400">View Token</button>
+    </div>
+    <div class="fade-in bg-gray-900/60 border border-gray-700 rounded-2xl shadow-xl p-6">
+      <h2 class="text-2xl font-semibold">$DOGECASH</h2>
+      <p class="text-sm text-gray-400 mt-1">Volume: $500K</p>
+      <p class="text-sm text-gray-400">Liquidity: $180K</p>
+      <button class="mt-4 px-4 py-2 rounded-xl bg-green-500 text-black font-bold hover:bg-green-400">View Token</button>
+    </div>
+  </section>
+
+  <!-- Simulated popup injection -->
+  <script>
+    const popupContainer = document.getElementById('popup-container');
+
+    function showPopup(name, link) {
+      const el = document.createElement('div');
+      el.className = 'popup bg-green-500 text-black font-bold px-6 py-3 rounded-xl shadow-lg';
+      el.textContent = `🚀 New Token Detected: ${name}`;
+      el.onclick = () => window.open(link, '_blank');
+      popupContainer.appendChild(el);
+      setTimeout(() => el.remove(), 5000);
+    }
+
+    // Simulate showing a few tokens
+    setTimeout(() => showPopup('$PEPEBOMB', 'https://solscan.io/token/xyz123'), 2000);
+    setTimeout(() => showPopup('$FLOKINU', 'https://solscan.io/token/abc456'), 6000);
+  </script>
+</body>
+</html>
