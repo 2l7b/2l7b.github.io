@@ -1,167 +1,109 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Chain Reaction AI - Bitboard Engine</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Logic Fix - Debugger</title>
     <style>
-        body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-        canvas { border: 2px solid #444; cursor: pointer; background: #000; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        .status { margin: 10px; font-size: 1.2rem; font-weight: bold; }
-        .controls { margin-bottom: 10px; }
+        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; }
+        canvas { display: block; background: #222; border: 2px solid #444; margin: 20px auto; }
+        .controls { text-align: center; margin-top: 10px; }
+        code { color: #00ff00; }
     </style>
 </head>
 <body>
-    <h1>Chain Reaction AI</h1>
-    <div class="controls">
-        <span id="turnIndicator" style="color: #ff6464;">Player's Turn (Red)</span>
-    </div>
-    <canvas id="gameCanvas" width="360" height="540"></canvas>
-    <div class="status" id="msg">Click a cell to start</div>
+
+<div class="controls">
+    <h2>AI Logic Debugger</h2>
+    <p>Move with <b>WASD</b> or <b>Arrows</b>. Watch the AI state: <span id="state-display">IDLE</span></p>
+</div>
+
+<canvas id="gameCanvas"></canvas>
 
 <script>
-const ROWS = 9, COLS = 6, CELL_SIZE = 60;
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const stateLabel = document.getElementById('state-display');
 
-// Game State using BigInt for 64-bit Bitboards
-let state = {
-    p1: 0n, p2: 0n, // Player bits
-    c1: 0n, c2: 0n, c3: 0n, // Count bits
-    turn: 1, // 1 for Player, -1 for AI
-    moves: 0
+canvas.width = 800;
+canvas.height = 500;
+
+// --- Game Objects ---
+const player = { x: 100, y: 100, size: 30, color: '#4CAF50', speed: 4 };
+const ai = { 
+    x: 600, y: 300, size: 30, color: '#f44336', 
+    speed: 2.5, state: 'IDLE', 
+    detectionRange: 200, attackRange: 40 
 };
 
-// --- CORE LOGIC ---
-function getBit(r, c) { return 1n << BigInt(r * COLS + c); }
+// --- Input Handling ---
+const keys = {};
+window.addEventListener('keydown', e => keys[e.key] = true);
+window.addEventListener('keyup', e => keys[e.key] = false);
 
-function getMass(r, c) {
-    let edges = (r === 0 || r === ROWS - 1 ? 1 : 0) + (c === 0 || c == COLS - 1 ? 1 : 0);
-    return edges === 2 ? 2 : (edges === 1 ? 3 : 4);
-}
+// --- Core Logic ---
 
-function applyMove(s, r, c) {
-    let stack = [[r, c]];
-    let pTurn = s.turn;
+function updateAI() {
+    const dx = player.x - ai.x;
+    const dy = player.y - ai.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
 
-    while (stack.length > 0) {
-        let [currR, currC] = stack.pop();
-        if (currR < 0 || currR >= ROWS || currC < 0 || currC >= COLS) continue;
-
-        let b = getBit(currR, currC);
-        let count = (s.c1 & b) ? 1 : (s.c2 & b ? 2 : (s.c3 & b ? 3 : 0));
-        
-        // Clear counts
-        s.c1 &= ~b; s.c2 &= ~b; s.c3 &= ~b;
-
-        if (count + 1 < getMass(currR, currC)) {
-            let nc = count + 1;
-            if (nc === 1) s.c1 |= b; else if (nc === 2) s.c2 |= b; else s.c3 |= b;
-            if (pTurn === 1) { s.p1 |= b; s.p2 &= ~b; } 
-            else { s.p2 |= b; s.p1 &= ~b; }
-        } else {
-            // Explosion
-            s.p1 &= ~b; s.p2 &= ~b;
-            stack.push([currR+1, currC], [currR-1, currC], [currR, currC+1], [currR, currC-1]);
-        }
-        // Win check during explosion
-        if (s.moves > 1) {
-            if (s.p1 > 0n && s.p2 === 0n) return 1;
-            if (s.p2 > 0n && s.p1 === 0n) return -1;
-        }
+    // 1. Decision Tree (The Brain)
+    if (distance < ai.attackRange) {
+        ai.state = 'ATTACK';
+    } else if (distance < ai.detectionRange) {
+        ai.state = 'CHASE';
+    } else {
+        ai.state = 'IDLE';
     }
-    return 0;
-}
 
-// --- AI ENGINE (Minimax) ---
-function evaluate(s) {
-    const countSetBits = (n) => {
-        let count = 0;
-        while (n > 0n) { n &= (n - 1n); count++; }
-        return count;
-    };
-    return countSetBits(s.p1) - countSetBits(s.p2);
-}
-
-function minimax(s, depth, alpha, beta, maxing) {
-    if (depth === 0) return evaluate(s);
-    let best = maxing ? -1000 : 1000;
-
-    for (let i = 0; i < ROWS * COLS; i++) {
-        let b = 1n << BigInt(i);
-        if (!((maxing ? s.p2 : s.p1) & b)) {
-            let next = JSON.parse(JSON.stringify(s, (k, v) => typeof v === 'bigint' ? v.toString() : v));
-            // Convert back to BigInt
-            next.p1 = BigInt(next.p1); next.p2 = BigInt(next.p2);
-            next.c1 = BigInt(next.c1); next.c2 = BigInt(next.c2); next.c3 = BigInt(next.c3);
-            
-            applyMove(next, Math.floor(i/COLS), i%COLS);
-            next.turn *= -1; next.moves++;
-            let v = minimax(next, depth - 1, alpha, beta, !maxing);
-            if (maxing) { best = Math.max(best, v); alpha = Math.max(alpha, best); }
-            else { best = Math.min(best, v); beta = Math.min(beta, best); }
-            if (beta <= alpha) break;
-        }
-    }
-    return best;
-}
-
-// --- UI & RENDER ---
-function draw() {
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw Grid
-    ctx.strokeStyle = '#333';
-    for(let i=0; i<=COLS; i++) { ctx.beginPath(); ctx.moveTo(i*60,0); ctx.lineTo(i*60,540); ctx.stroke(); }
-    for(let i=0; i<=ROWS; i++) { ctx.beginPath(); ctx.moveTo(0,i*60); ctx.lineTo(360,i*60); ctx.stroke(); }
-
-    // Draw Orbs
-    for (let r = 0; r < ROWS; r++) {
-        for (let c = 0; c < COLS; c++) {
-            let b = getBit(r, c);
-            if (!((state.p1 | state.p2) & b)) continue;
-            
-            ctx.fillStyle = (state.p1 & b) ? '#ff6464' : '#64ff64';
-            let count = (state.c1 & b) ? 1 : (state.c2 & b ? 2 : 3);
-            let x = c * 60 + 30, y = r * 60 + 30;
-
-            if (count >= 1) { ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI*2); ctx.fill(); }
-            if (count >= 2) { ctx.beginPath(); ctx.arc(x-10, y, 12, 0, Math.PI*2); ctx.fill(); }
-            if (count === 3) { ctx.beginPath(); ctx.arc(x+10, y, 12, 0, Math.PI*2); ctx.fill(); }
-        }
-    }
-}
-
-canvas.onclick = (e) => {
-    if (state.turn !== 1) return;
-    let rect = canvas.getBoundingClientRect();
-    let c = Math.floor((e.clientX - rect.left) / CELL_SIZE);
-    let r = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+    // 2. State Execution
+    stateLabel.innerText = ai.state;
     
-    if (!(state.p2 & getBit(r, c))) {
-        applyMove(state, r, c);
-        state.turn = -1;
-        state.moves++;
-        document.getElementById('turnIndicator').innerText = "AI is thinking...";
-        document.getElementById('turnIndicator').style.color = "#64ff64";
-        draw();
-        setTimeout(aiMove, 500);
+    if (ai.state === 'CHASE') {
+        const angle = Math.atan2(dy, dx);
+        ai.x += Math.cos(angle) * ai.speed;
+        ai.y += Math.sin(angle) * ai.speed;
+        ai.color = '#ff9800'; // Orange when chasing
+    } else if (ai.state === 'ATTACK') {
+        ai.color = '#ffff00'; // Yellow when attacking
+        // Add recoil or damage logic here
+    } else {
+        ai.color = '#f44336'; // Red when idle
     }
-};
+}
 
-function aiMove() {
-    let bestV = 1000, bestIdx = -1;
-    for (let i = 0; i < ROWS * COLS; i++) {
-        if (!(state.p1 & (1n << BigInt(i)))) {
-            let v = minimax(state, 3, -1000, 1000, true); 
-            if (v < bestV) { bestV = v; bestIdx = i; }
-        }
-    }
-    applyMove(state, Math.floor(bestIdx/COLS), bestIdx%COLS);
-    state.turn = 1;
-    state.moves++;
-    document.getElementById('turnIndicator').innerText = "Player's Turn (Red)";
-    document.getElementById('turnIndicator').style.color = "#ff6464";
-    draw();
+function updatePlayer() {
+    if (keys['w'] || keys['ArrowUp']) player.y -= player.speed;
+    if (keys['s'] || keys['ArrowDown']) player.y += player.speed;
+    if (keys['a'] || keys['ArrowLeft']) player.x -= player.speed;
+    if (keys['d'] || keys['ArrowRight']) player.x += player.speed;
+}
+
+// --- Rendering ---
+
+function draw() {
+    // Clear Canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Detection Range (Visual Debugging)
+    ctx.beginPath();
+    ctx.arc(ai.x + ai.size/2, ai.y + ai.size/2, ai.detectionRange, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.stroke();
+
+    // Draw Player
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.size, player.size);
+
+    // Draw AI
+    ctx.fillStyle = ai.color;
+    ctx.fillRect(ai.x, ai.y, ai.size, ai.size);
+
+    // Loop
+    updatePlayer();
+    updateAI();
+    requestAnimationFrame(draw);
 }
 
 draw();
