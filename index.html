@@ -1,112 +1,78 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Logic Fix - Debugger</title>
-    <style>
-        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; }
-        canvas { display: block; background: #222; border: 2px solid #444; margin: 20px auto; }
-        .controls { text-align: center; margin-top: 10px; }
-        code { color: #00ff00; }
-    </style>
-</head>
-<body>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<div class="controls">
-    <h2>AI Logic Debugger</h2>
-    <p>Move with <b>WASD</b> or <b>Arrows</b>. Watch the AI state: <span id="state-display">IDLE</span></p>
+	 <!--Import Google Icon Font-->
+      <!-- <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+ -->
+      
+      <!--Import materialize.css-->
+      <link type="text/css" rel="stylesheet" href="css/materialize.css"  media="screen,projection"/>
+
+
+
+	<title>chainReaction</title>
+
+	<script src="../libraries/p5.js"></script>
+	<script src="../libraries/p5.dom.js"></script>
+	<script src="../libraries/p5.sound.js"></script>
+	<script src="sketch.js"></script>
+
+	
+
+	<style type="text/css">
+		body{
+			/*overflow: hidden;*/
+			height: 100%;
+		}
+
+
+	</style>
+</head>
+<body bgcolor="black">
+
+	<div class="container">
+
+	<div class="row">
+       <div class="col s8"><h6><div class="card-panel grey darken-4 white-text"><b>Chain Reaction</b></div></h6></div>
+       <div class="col s3"><h6><div class="card-panel grey darken-4 white-text"><b>Undo</b></div></h6></div>
+       <div class="col s1"><h6>
+       	
+		<a class='dropdown-trigger btn-large grey darken-4 white-text' href='#' data-target='dropdown1' id="dropped">
+		:
+		</a>
+
+
+       </h6></div>
+     </div>
+
 </div>
 
-<canvas id="gameCanvas"></canvas>
+      <!-- Dropdown Trigger -->
+  
 
-<script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const stateLabel = document.getElementById('state-display');
+  <!-- Dropdown Structure -->
+  <ul id='dropdown1' class='dropdown-content'>
+    <li><a href="#!">Settings</a></li>
+    <li><a href="#!">New Game</a></li>
+  </ul>
 
-canvas.width = 800;
-canvas.height = 500;
 
-// --- Game Objects ---
-const player = { x: 100, y: 100, size: 30, color: '#4CAF50', speed: 4 };
-const ai = { 
-    x: 600, y: 300, size: 30, color: '#f44336', 
-    speed: 2.5, state: 'IDLE', 
-    detectionRange: 200, attackRange: 40 
-};
+    <!--  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script> -->
 
-// --- Input Handling ---
-const keys = {};
-window.addEventListener('keydown', e => keys[e.key] = true);
-window.addEventListener('keyup', e => keys[e.key] = false);
-
-// --- Core Logic ---
-
-function updateAI() {
-    const dx = player.x - ai.x;
-    const dy = player.y - ai.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    // 1. Decision Tree (The Brain)
-    if (distance < ai.attackRange) {
-        ai.state = 'ATTACK';
-    } else if (distance < ai.detectionRange) {
-        ai.state = 'CHASE';
-    } else {
-        ai.state = 'IDLE';
-    }
-
-    // 2. State Execution
-    stateLabel.innerText = ai.state;
+	<!--JavaScript at end of body for optimized loading-->
+      <script type="text/javascript" src="js/materialize.min.js">
+      </script>
+      <script type="text/javascript">
+      	document.addEventListener('DOMContentLoaded', function() {
+	    var elems = document.querySelectorAll('.dropdown-trigger');
+	    var instances = M.Dropdown.init(elems, dropdown1);
+	  });
+      </script>
     
-    if (ai.state === 'CHASE') {
-        const angle = Math.atan2(dy, dx);
-        ai.x += Math.cos(angle) * ai.speed;
-        ai.y += Math.sin(angle) * ai.speed;
-        ai.color = '#ff9800'; // Orange when chasing
-    } else if (ai.state === 'ATTACK') {
-        ai.color = '#ffff00'; // Yellow when attacking
-        // Add recoil or damage logic here
-    } else {
-        ai.color = '#f44336'; // Red when idle
-    }
-}
 
-function updatePlayer() {
-    if (keys['w'] || keys['ArrowUp']) player.y -= player.speed;
-    if (keys['s'] || keys['ArrowDown']) player.y += player.speed;
-    if (keys['a'] || keys['ArrowLeft']) player.x -= player.speed;
-    if (keys['d'] || keys['ArrowRight']) player.x += player.speed;
-}
-
-// --- Rendering ---
-
-function draw() {
-    // Clear Canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw Detection Range (Visual Debugging)
-    ctx.beginPath();
-    ctx.arc(ai.x + ai.size/2, ai.y + ai.size/2, ai.detectionRange, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.stroke();
-
-    // Draw Player
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x, player.y, player.size, player.size);
-
-    // Draw AI
-    ctx.fillStyle = ai.color;
-    ctx.fillRect(ai.x, ai.y, ai.size, ai.size);
-
-    // Loop
-    updatePlayer();
-    updateAI();
-    requestAnimationFrame(draw);
-}
-
-draw();
-</script>
 </body>
 </html>
